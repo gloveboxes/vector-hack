@@ -63,20 +63,6 @@ class SUMMARIZE_TRANSCRIPTS:
         for count, r in enumerate(self.master_segments, start=1):
             print(count)
 
-            ollama_response = self.custom_client.chat(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": SYSTEM_MESSAGE,
-                    },
-                    {
-                        "role": "user",
-                        "content": r["text"],
-                    },
-                ],
-            )
-
-            r["summary"] = ollama_response["message"]["content"].strip()
+            r["summary"] = self.get_summary(r["text"])
 
         self.save_master()
