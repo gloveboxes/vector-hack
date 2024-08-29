@@ -28,7 +28,7 @@ embedded_transcripts = EMBEDDED_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER, verbose=Fa
 # embedded_transcripts.process_segments()
 
 summarize_transcripts = SUMMARIZE_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
-# summarize_transcripts.summarize_text()
+summarize_transcripts.summarize_text()
 
 loader = LOAD_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
 loader.start_load()

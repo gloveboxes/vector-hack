@@ -5,7 +5,7 @@ import json
 from time import sleep
 
 summary_endpoint = os.environ.get("SUMMARY_ENDPOINT")
-model = "phi3.5"
+model = "llama3.1"
 TRANSCRIPT_MASTER_FILE = "master_transcriptions.json"
 
 SYSTEM_MESSAGE = (
@@ -39,7 +39,7 @@ class SUMMARIZE_TRANSCRIPTS:
             json.dump(self.master_segments, f)
 
     def get_summary(self: "SUMMARIZE_TRANSCRIPTS", text: str) -> str:
-        max_retry = 3
+        max_retry = 10
 
         for attempt in range(max_retry):
             try:
@@ -53,7 +53,7 @@ class SUMMARIZE_TRANSCRIPTS:
                 return ollama_response["message"]["content"].strip()
             except Exception as error:
                 print(f"Attempt {attempt + 1} failed with error: {error}")
-                sleep(4)
+                sleep(10)
         else:
             print("All retry attempts failed.")
             return ""
