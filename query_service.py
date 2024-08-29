@@ -1,11 +1,13 @@
+import json
+import os
+
+from dotenv import load_dotenv
 import asyncpg
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+
 from ollama import Client
-import json
-from dotenv import load_dotenv
-import os
 
 # Load environment variables from .env file
 load_dotenv()
@@ -54,9 +56,7 @@ async def get_videos(request: PromptRequest) -> list:
     try:
         query_vector = json.dumps(get_vector_data(prompt))
 
-        select_query = (
-            'SELECT * FROM public."video_gpt" ORDER BY embedding <-> $1 LIMIT 2'
-        )
+        select_query = 'SELECT * FROM public."video_gpt" ORDER BY embedding <-> $1 LIMIT 2'
         results = await connection.fetch(select_query, query_vector)
 
         response = []

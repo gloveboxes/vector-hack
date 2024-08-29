@@ -1,62 +1,34 @@
-import asyncpg
-import asyncio
-from ollama import Client
-import json
+import os
+from pathlib import Path
+from dotenv import load_dotenv
 
-remote_host = "http://hub:11434"
-user = "postgres"
-password = "M1cr0s0ft"
-host = "rpi58"
-port = 5432
-database = "vector-hack"
+from download_transcripts import DOWNLOAD_TRANSCRIPT
+from bucket_transcripts import BUCKET_TRANSCRIPTS
+from embed_transcripts import EMBEDDED_TRANSCRIPTS
+from summarize_transcripts import SUMMARIZE_TRANSCRIPTS
+from load_transcripts import LOAD_TRANSCRIPTS
 
+# Load environment variables from .env file
+load_dotenv()
 
-def get_vector_data(prompt: str):
-    custom_client = Client(host=remote_host, timeout=10)
-    embedding_result = custom_client.embeddings(model="nomic-embed-text", prompt=prompt)
-    return embedding_result["embedding"]
+TRANSCRIPT_FOLDER = os.environ["TRANSCRIPT_FOLDER"]
 
 
-async def connect_to_db():
-    # Connect to the PostgreSQL database
-    connection = await asyncpg.connect(
-        user=user,
-        password=password,
-        host=host,
-        port=port,
-        database=database,
-    )
+# does the transcript folder exist?
+if not Path(TRANSCRIPT_FOLDER).exists():
+    Path(TRANSCRIPT_FOLDER).mkdir()
 
-    if connection is None or connection.is_closed():
-        print("Connection failed")
-        return
+dl = DOWNLOAD_TRANSCRIPT(TRANSCRIPT_FOLDER)
+dl.start_download()
 
-    print("Connection successful")
+bt = BUCKET_TRANSCRIPTS(TRANSCRIPT_FOLDER, 3)
+bt.process_transcripts()
 
-    while True:
-        prompt = input("Enter a prompt: ")
-        if prompt == "exit":
-            break
-        if prompt is None or prompt == "":
-            continue
+embedded_transcripts = EMBEDDED_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER, verbose=False)
+embedded_transcripts.process_segments()
 
-        vector = json.dumps(get_vector_data(prompt))
+summarize_transcripts = SUMMARIZE_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
+summarize_transcripts.summarize_text()
 
-        select_query = 'SELECT * FROM public."video_gpt" ORDER BY embedding <-> $1 LIMIT 2'
-        results = await connection.fetch(select_query, vector)
-
-        for result in results:
-            # https://youtu.be/_G-PDO7OERE?si=bbukKnSBAekuaYzB&t=1123
-            title = result["title"]
-            youtube_id = f'https://youtu.be/{result["videoid"]}&t={result["seconds"]}'
-            print(title)
-            print(youtube_id)
-
-    await connection.close()
-
-
-# summarize_text("hdghdghdg")
-
-
-# Run the async function
-asyncio.run(connect_to_db())
+loader = LOAD_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
+loader.start_load()
