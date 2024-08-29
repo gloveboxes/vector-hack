@@ -1,9 +1,11 @@
+import os
 from pathlib import Path
 from ollama import Client
 import json
+from time import sleep
 
-remote_host = "http://jumbo:11434"
-model = "phi3.5:3.8b-mini-instruct-q8_0"
+summary_endpoint = os.environ.get("SUMMARY_ENDPOINT")
+model = "phi3.5"
 TRANSCRIPT_MASTER_FILE = "master_transcriptions.json"
 
 SYSTEM_MESSAGE = (
@@ -16,12 +18,11 @@ SYSTEM_MESSAGE = (
 class SUMMARIZE_TRANSCRIPTS:
     def __init__(self: "SUMMARIZE_TRANSCRIPTS", folder: str, timeout: int = 60) -> None:
         self.folder = folder
-        self.remote_host = remote_host
         self.model = model
         self.timeout = timeout
         self.master_segments = []
         self.total_segments = 0
-        self.custom_client = Client(host=self.remote_host, timeout=self.timeout)
+        self.custom_client = Client(host=summary_endpoint, timeout=self.timeout)
 
     def load_master(self: "SUMMARIZE_TRANSCRIPTS") -> list:
         """Load segments from the JSON file."""
@@ -52,6 +53,7 @@ class SUMMARIZE_TRANSCRIPTS:
                 return ollama_response["message"]["content"].strip()
             except Exception as error:
                 print(f"Attempt {attempt + 1} failed with error: {error}")
+                sleep(4)
         else:
             print("All retry attempts failed.")
             return ""

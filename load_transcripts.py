@@ -9,9 +9,10 @@ POSTGRES_CONNECTION_STRING = os.getenv("POSTGRES_CONNECTION_STRING")
 
 
 class LOAD_TRANSCRIPTS:
-    def __init__(self: "LOAD_TRANSCRIPTS") -> None:
+    def __init__(self: "LOAD_TRANSCRIPTS", folder: str) -> None:
         # Load environment variables for database connection
         self.connection = None
+        self.folder = folder
 
     async def connect(self: "LOAD_TRANSCRIPTS") -> bool:
         """Establish a connection to the database."""
@@ -28,13 +29,13 @@ class LOAD_TRANSCRIPTS:
             print(f"An error occurred while connecting to the database: {e}")
             return False
 
-    async def load_data(self: "LOAD_TRANSCRIPTS", folder: str) -> None:
+    async def load_data(self: "LOAD_TRANSCRIPTS") -> None:
         """Load data from JSON file and insert it into the database."""
         if not await self.connect():
             return
 
         try:
-            input_file = Path(folder) / "output" / TRANSCRIPT_MASTER_FILE
+            input_file = Path(self.folder) / "output" / TRANSCRIPT_MASTER_FILE
             with input_file.open("r", encoding="utf-8") as f:
                 master = json.load(f)
 
@@ -45,22 +46,25 @@ class LOAD_TRANSCRIPTS:
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             """
 
+           
+
             # Insert data into the database
             for r in master:
-                await self.connection.execute(
-                    insert_query,
-                    json.dumps(r["ada_v2"]),
-                    r["speaker"],
-                    r["title"],
-                    r["videoId"],
-                    r["description"],
-                    r["start"],
-                    r["seconds"],
-                    r["text"],
-                    r["summary"],
-                )
-
-            print("Data loaded successfully.")
+                try:
+                    await self.connection.execute(
+                        insert_query,
+                        json.dumps(r["ada_v2"]),
+                        r["speaker"],
+                        r["title"],
+                        r["videoId"],
+                        r["description"],
+                        r["start"],
+                        r["seconds"],
+                        r["text"],
+                        r["summary"],
+                    )
+                except Exception:
+                    print(f"An error occurred while inserting data: {r['summary']}")
 
         except Exception as e:
             print(f"An error occurred while loading data: {e}")
@@ -71,6 +75,6 @@ class LOAD_TRANSCRIPTS:
                 await self.connection.close()
                 print("Database connection closed.")
 
-    def start_load(self: "LOAD_TRANSCRIPTS", folder: str) -> None:
+    def start_load(self: "LOAD_TRANSCRIPTS") -> None:
         """Start the process of loading data."""
-        asyncio.run(self.load_data(folder))
+        asyncio.run(self.load_data())
