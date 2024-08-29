@@ -19,13 +19,13 @@ if not Path(TRANSCRIPT_FOLDER).exists():
     Path(TRANSCRIPT_FOLDER).mkdir()
 
 dl = DOWNLOAD_TRANSCRIPT(TRANSCRIPT_FOLDER)
-# dl.start_download()
+dl.start_download()
 
-bt = BUCKET_TRANSCRIPTS(TRANSCRIPT_FOLDER, 3)
-# bt.process_transcripts()
+bt = BUCKET_TRANSCRIPTS(TRANSCRIPT_FOLDER, 5)
+bt.process_transcripts()
 
 embedded_transcripts = EMBEDDED_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER, verbose=False)
-# embedded_transcripts.process_segments()
+embedded_transcripts.process_segments()
 
 summarize_transcripts = SUMMARIZE_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
 summarize_transcripts.summarize_text()
