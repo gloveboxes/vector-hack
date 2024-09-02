@@ -1,3 +1,4 @@
+import os
 import logging
 from pathlib import Path
 import re
@@ -5,7 +6,7 @@ import json
 import tiktoken
 from ollama import Client
 
-OLLAMA_EMBEDDING_ENDPOINT = "http://jumbo:11434"
+OLLAMA_EMBEDDING_ENDPOINT = os.getenv("OLLAMA_EMBEDDING_ENDPOINT")
 OLLAMA_EMBEDDING_MODEL = "nomic-embed-text"
 TRANSCRIPT_MASTER_FILE = "master_transcriptions.json"
 

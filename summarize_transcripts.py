@@ -4,7 +4,7 @@ from ollama import Client
 import json
 from time import sleep
 
-summary_endpoint = os.environ.get("SUMMARY_ENDPOINT")
+summary_endpoint = os.environ.get("OLLAMA_SUMMARY_ENDPOINT")
 model = "llama3.1"
 TRANSCRIPT_MASTER_FILE = "master_transcriptions.json"
 

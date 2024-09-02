@@ -14,7 +14,7 @@ from ollama import Client
 load_dotenv()
 
 
-EMBEDDING_ENDPOINT = os.getenv("REMOTE_HOST")
+OLLAMA_EMBEDDING_ENDPOINT = os.getenv("OLLAMA_EMBEDDING_ENDPOINT")
 POSTGRES_CONNECTION_STRING = os.getenv("POSTGRES_CONNECTION_STRING")
 EMBEDDING_MODEL = "nomic-embed-text"
 
@@ -36,7 +36,7 @@ app = FastAPI(lifespan=lifespan)
 
 
 def get_vector_data(prompt: str) -> List[float]:
-    custom_client = Client(host=EMBEDDING_ENDPOINT, timeout=10)
+    custom_client = Client(host=OLLAMA_EMBEDDING_ENDPOINT, timeout=10)
     embedding_result = custom_client.embeddings(model=EMBEDDING_MODEL, prompt=prompt)
     return embedding_result["embedding"]
 
