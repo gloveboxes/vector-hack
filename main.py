@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 
 from download_transcripts import DOWNLOAD_TRANSCRIPT
 from bucket_transcripts import BUCKET_TRANSCRIPTS
-from embed_transcripts import EMBEDDED_TRANSCRIPTS
+from embed_transcripts import EMBED_TRANSCRIPTS
 from summarize_transcripts import SUMMARIZE_TRANSCRIPTS
 from load_transcripts import LOAD_TRANSCRIPTS
 
@@ -19,16 +19,16 @@ if not Path(TRANSCRIPT_FOLDER).exists():
     Path(TRANSCRIPT_FOLDER).mkdir()
 
 dl = DOWNLOAD_TRANSCRIPT(TRANSCRIPT_FOLDER)
-dl.start_download()
+# dl.start_download()
 
 bt = BUCKET_TRANSCRIPTS(TRANSCRIPT_FOLDER, 5)
-bt.process_transcripts()
+# bt.process_transcripts()
 
-embedded_transcripts = EMBEDDED_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER, verbose=False)
-embedded_transcripts.process_segments()
+embedded_transcripts = EMBED_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER, verbose=False)
+# embedded_transcripts.process_segments()
 
 summarize_transcripts = SUMMARIZE_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
-summarize_transcripts.summarize_text()
+# summarize_transcripts.summarize_text()
 
 loader = LOAD_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
 loader.start_load()

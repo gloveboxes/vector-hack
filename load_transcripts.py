@@ -51,9 +51,10 @@ class LOAD_TRANSCRIPTS:
             # Insert data into the database
             for r in master:
                 try:
+                    vector_string = '[{}]'.format(', '.join(map(str, r["ada_v2"])))
                     await self.connection.execute(
                         insert_query,
-                        json.dumps(r["ada_v2"]),
+                        vector_string,
                         r["speaker"],
                         r["title"],
                         r["videoId"],

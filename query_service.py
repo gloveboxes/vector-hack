@@ -1,4 +1,3 @@
-import json
 import os
 
 from dotenv import load_dotenv
@@ -44,12 +43,13 @@ async def get_videos(request: PromptRequest) -> list:
         raise HTTPException(status_code=500, detail="Connection to database failed")
 
     try:
-        query_vector = json.dumps(get_vector_data(prompt))
+        vector = get_vector_data(prompt)
+        vector_string = '[{}]'.format(', '.join(map(str, vector)))
 
         select_query = (
-            'SELECT * FROM public."video_gpt" ORDER BY embedding <-> $1 LIMIT 2'
+            "SELECT *, embedding <-> $1::vector AS distance FROM public.video_gpt ORDER BY distance LIMIT 3"
         )
-        results = await connection.fetch(select_query, query_vector)
+        results = await connection.fetch(select_query, vector_string)
 
         response = []
         for result in results:
@@ -58,8 +58,9 @@ async def get_videos(request: PromptRequest) -> list:
             response.append(
                 {
                     "title": title,
+                    "distance": result["distance"],
                     "youtube_link": youtube_link,
-                    "summary": result["summary"],
+                    "text": result["text"],
                 }
             )
 
