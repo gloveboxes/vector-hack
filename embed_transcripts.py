@@ -7,7 +7,7 @@ import tiktoken
 from ollama import Client
 
 OLLAMA_EMBEDDING_ENDPOINT = os.getenv("OLLAMA_EMBEDDING_ENDPOINT")
-OLLAMA_EMBEDDING_MODEL = "nomic-embed-text"
+OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL")
 TRANSCRIPT_MASTER_FILE = "master_transcriptions.json"
 
 

@@ -5,7 +5,7 @@ import json
 from time import sleep
 
 summary_endpoint = os.environ.get("OLLAMA_SUMMARY_ENDPOINT")
-model = "llama3.1"
+model = os.environ.get("OLLAMA_SUMMARY_MODEL")
 TRANSCRIPT_MASTER_FILE = "master_transcriptions.json"
 
 SYSTEM_MESSAGE = (
