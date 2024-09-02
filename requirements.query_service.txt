@@ -1,0 +1,5 @@
+asyncpg
+ollama
+fastapi 
+uvicorn
+python-dotenv>=1.0.1, <2.0.0
