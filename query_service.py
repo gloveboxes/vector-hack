@@ -1,10 +1,12 @@
 import os
+from typing import Any, AsyncGenerator, List
 
 from dotenv import load_dotenv
 import asyncpg
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+from contextlib import asynccontextmanager
 
 from ollama import Client
 
@@ -12,19 +14,30 @@ from ollama import Client
 load_dotenv()
 
 
-app = FastAPI()
-
-remote_host = os.getenv("REMOTE_HOST")
+EMBEDDING_ENDPOINT = os.getenv("REMOTE_HOST")
 POSTGRES_CONNECTION_STRING = os.getenv("POSTGRES_CONNECTION_STRING")
+EMBEDDING_MODEL = "nomic-embed-text"
 
 
 class PromptRequest(BaseModel):
     prompt: str
 
 
-def get_vector_data(prompt: str) -> list:
-    custom_client = Client(host=remote_host, timeout=10)
-    embedding_result = custom_client.embeddings(model="nomic-embed-text", prompt=prompt)
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
+    app.state.db_connection = await asyncpg.connect(POSTGRES_CONNECTION_STRING)
+    try:
+        yield
+    finally:
+        await app.state.db_connection.close()
+
+
+app = FastAPI(lifespan=lifespan)
+
+
+def get_vector_data(prompt: str) -> List[float]:
+    custom_client = Client(host=EMBEDDING_ENDPOINT, timeout=10)
+    embedding_result = custom_client.embeddings(model=EMBEDDING_MODEL, prompt=prompt)
     return embedding_result["embedding"]
 
 
@@ -34,39 +47,38 @@ async def connect_to_db() -> asyncpg.Connection:
 
 @app.post("/get-videos/")
 async def get_videos(request: PromptRequest) -> list:
-    prompt = request.prompt
-    if not prompt:
+    if not request.prompt:
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
-    connection = await connect_to_db()
+    connection = app.state.db_connection
     if connection is None or connection.is_closed():
         raise HTTPException(status_code=500, detail="Connection to database failed")
 
     try:
-        vector = get_vector_data(prompt)
-        vector_string = '[{}]'.format(', '.join(map(str, vector)))
+        vector = get_vector_data(request.prompt)
+        vector_string = f"[{', '.join(map(str, vector))}]"
 
-        select_query = (
-            "SELECT *, embedding <-> $1::vector AS distance FROM public.video_gpt ORDER BY distance LIMIT 3"
-        )
+        select_query = """
+        SELECT *, embedding <-> $1::vector AS distance 
+        FROM public.video_gpt 
+        ORDER BY distance 
+        LIMIT 3
+        """
+
         results = await connection.fetch(select_query, vector_string)
 
-        response = []
-        for result in results:
-            title = result["title"]
-            youtube_link = f'https://youtu.be/{result["videoid"]}&t={result["seconds"]}'
-            response.append(
-                {
-                    "title": title,
-                    "distance": result["distance"],
-                    "youtube_link": youtube_link,
-                    "text": result["text"],
-                }
-            )
-
-        return response
-    finally:
-        await connection.close()
+        return [
+            {
+                "title": result["title"],
+                "distance": result["distance"],
+                "youtube_link": f'https://youtu.be/{result["videoid"]}&t={result["seconds"]}',
+                "text": result["text"]
+            }
+            for result in results
+        ]
+    
+    except Exception as e:
+        print(f"An error occurred while fetching data: {e}")
 
 
 if __name__ == "__main__":
