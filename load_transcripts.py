@@ -46,12 +46,10 @@ class LOAD_TRANSCRIPTS:
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             """
 
-           
-
             # Insert data into the database
             for r in master:
                 try:
-                    vector_string = '[{}]'.format(', '.join(map(str, r["ada_v2"])))
+                    vector_string = "[{}]".format(", ".join(map(str, r["ada_v2"])))
                     await self.connection.execute(
                         insert_query,
                         vector_string,

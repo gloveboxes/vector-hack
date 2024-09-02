@@ -1,13 +1,12 @@
 import os
 from typing import Any, AsyncGenerator, List
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 import asyncpg
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from contextlib import asynccontextmanager
-
 from ollama import Client
 
 # Load environment variables from .env file
@@ -72,11 +71,11 @@ async def get_videos(request: PromptRequest) -> list:
                 "title": result["title"],
                 "distance": result["distance"],
                 "youtube_link": f'https://youtu.be/{result["videoid"]}&t={result["seconds"]}',
-                "text": result["text"]
+                "text": result["text"],
             }
             for result in results
         ]
-    
+
     except Exception as e:
         print(f"An error occurred while fetching data: {e}")
 
