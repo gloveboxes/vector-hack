@@ -6,8 +6,10 @@
 # the directional similarity between them, irrespective of their magnitude.
 
 import os
+import logging
 from typing import Any, AsyncGenerator, List
 from contextlib import asynccontextmanager
+import httpx
 
 from dotenv import load_dotenv
 import asyncpg
@@ -16,6 +18,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from ollama import Client
 
+logging.basicConfig(level=logging.INFO)  # You can set the desired logging level
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -23,6 +27,10 @@ load_dotenv()
 OLLAMA_EMBEDDING_ENDPOINT = os.getenv("OLLAMA_EMBEDDING_ENDPOINT")
 POSTGRES_CONNECTION_STRING = os.getenv("POSTGRES_CONNECTION_STRING")
 OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL")
+
+custom_client = Client(host=OLLAMA_EMBEDDING_ENDPOINT, timeout=10)
+# Create a persistent client instance
+client = httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_connections=100, max_keepalive_connections=20))
 
 
 class PromptRequest(BaseModel):
@@ -42,11 +50,25 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
 
 app = FastAPI(lifespan=lifespan)
 
-
-def get_vector_data(prompt: str) -> List[float]:
-    custom_client = Client(host=OLLAMA_EMBEDDING_ENDPOINT, timeout=10)
-    embedding_result = custom_client.embeddings(model=OLLAMA_EMBEDDING_MODEL, prompt=prompt)
-    return embedding_result["embedding"]
+async def get_vector_data_async(prompt: str) -> List[float]:
+    try:
+        response = await client.post(
+            OLLAMA_EMBEDDING_ENDPOINT,
+            json={"model": OLLAMA_EMBEDDING_MODEL, "input": prompt},
+            timeout=10.0
+        )
+        response.raise_for_status()
+        embedding_result = response.json()
+        return embedding_result["embeddings"][0]
+    except httpx.TimeoutException as e:
+        logging.error(f"Timeout error occurred: {e}")
+        raise
+    except httpx.RequestError as e:
+        logging.error(f"Request error occurred: {e}")
+        raise
+    except Exception as e:
+        logging.error(f"An error occurred while fetching data: {e}")
+        raise
 
 
 @app.post("/get-videos/")
@@ -56,7 +78,7 @@ async def get_videos(request: PromptRequest) -> list:
 
     async with app.state.db_pool.acquire() as connection:
         try:
-            vector = get_vector_data(request.prompt)
+            vector = await get_vector_data_async(request.prompt)
             vector_string = f"[{', '.join(map(str, vector))}]"
 
             select_query = "SELECT * FROM public.get_similar_videos($1, $2, $3)"
@@ -72,8 +94,13 @@ async def get_videos(request: PromptRequest) -> list:
                 for result in results
             ]
 
+        except asyncpg.exceptions.PostgresError as e:
+            logging.error(f"An error occurred while executing the Postgres query: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error") from e
+
         except Exception as e:
-            print(f"An error occurred while fetching data: {e}")
+            logging.error(f"An error occurred while fetching data: {e}")
+            raise HTTPException(status_code=500, detail="Internal server error") from e
 
 
 if __name__ == "__main__":
