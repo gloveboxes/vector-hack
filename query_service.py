@@ -51,9 +51,6 @@ async def get_videos(
     if not request.prompt:
         raise HTTPException(status_code=400, detail="Prompt cannot be empty")
 
-    # connection = app.state.db_connection
-    # if connection is None or connection.is_closed():
-    #     raise HTTPException(status_code=500, detail="Connection to database failed")
     async with app.state.db_pool.acquire() as connection:
         try:
             vector = get_vector_data(request.prompt)
