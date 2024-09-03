@@ -41,9 +41,31 @@ class LOAD_TRANSCRIPTS:
 
             # SQL query for inserting data
             insert_query = """
-                INSERT INTO public."video_gpt" 
-                (embedding, speaker, title, videoId, description, start, seconds, text, summary) 
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                INSERT INTO public."video_embeddings" 
+                (embedding, start, seconds, text, summary) 
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING id
+            """
+
+            insert_video_query = """
+                INSERT INTO public."video_catalog" 
+                (id, speaker, title, videoId, description) 
+                VALUES ($1, $2, $3, $4, $5)
+            """
+
+            insert_combined_query = """
+                WITH inserted_embedding AS (
+                    INSERT INTO public."video_embeddings" 
+                    (embedding, start, seconds, text, summary) 
+                    VALUES ($1, $2, $3, $4, $5)
+                    RETURNING id
+                )
+                INSERT INTO public."video_catalog" 
+                (id, speaker, title, videoId, description) 
+                VALUES (
+                    (SELECT id FROM inserted_embedding), 
+                    $6, $7, $8, $9
+                )
             """
 
             # Insert data into the database
@@ -51,17 +73,38 @@ class LOAD_TRANSCRIPTS:
                 try:
                     vector_string = "[{}]".format(", ".join(map(str, r["ada_v2"])))
                     await self.connection.execute(
-                        insert_query,
+                        insert_combined_query,
                         vector_string,
-                        r["speaker"],
-                        r["title"],
-                        r["videoId"],
-                        r["description"],
                         r["start"],
                         r["seconds"],
                         r["text"],
                         r["summary"],
+                        r["speaker"],
+                        r["title"],
+                        r["videoId"],
+                        r["description"],
                     )
+                    
+                    # vector_string = "[{}]".format(", ".join(map(str, r["ada_v2"])))
+                    # id = await self.connection.fetchval(
+                    #     insert_query,
+                    #     vector_string,
+                    #     r["start"],
+                    #     r["seconds"],
+                    #     r["text"],
+                    #     r["summary"],
+                    # )
+                    # print(f"Inserted data with ID: {id}")
+
+                    # await self.connection.execute(
+                    #     insert_video_query,
+                    #     id,
+                    #     r["speaker"],
+                    #     r["title"],
+                    #     r["videoId"],
+                    #     r["description"],
+                    # )
+
                 except Exception:
                     print(f"An error occurred while inserting data: {r['summary']}")
 
