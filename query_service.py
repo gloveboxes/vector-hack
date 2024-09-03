@@ -16,7 +16,6 @@ import asyncpg
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from ollama import Client
 
 logging.basicConfig(level=logging.INFO)  # You can set the desired logging level
 
@@ -28,9 +27,8 @@ OLLAMA_EMBEDDING_ENDPOINT = os.getenv("OLLAMA_EMBEDDING_ENDPOINT")
 POSTGRES_CONNECTION_STRING = os.getenv("POSTGRES_CONNECTION_STRING")
 OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL")
 
-custom_client = Client(host=OLLAMA_EMBEDDING_ENDPOINT, timeout=10)
 # Create a persistent client instance
-client = httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_connections=100, max_keepalive_connections=20))
+httpx_client = httpx.AsyncClient(timeout=10.0, limits=httpx.Limits(max_connections=100, max_keepalive_connections=20))
 
 
 class PromptRequest(BaseModel):
@@ -46,16 +44,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[Any, Any]:
         yield
     finally:
         await app.state.db_pool.close()
+        await httpx_client.aclose()
 
 
 app = FastAPI(lifespan=lifespan)
 
+
 async def get_vector_data_async(prompt: str) -> List[float]:
     try:
-        response = await client.post(
-            OLLAMA_EMBEDDING_ENDPOINT,
-            json={"model": OLLAMA_EMBEDDING_MODEL, "input": prompt},
-            timeout=10.0
+        response = await httpx_client.post(
+            OLLAMA_EMBEDDING_ENDPOINT, json={"model": OLLAMA_EMBEDDING_MODEL, "input": prompt}, timeout=10.0
         )
         response.raise_for_status()
         embedding_result = response.json()
