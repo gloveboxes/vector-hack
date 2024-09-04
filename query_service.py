@@ -51,6 +51,7 @@ app = FastAPI(lifespan=lifespan)
 
 
 async def get_vector_data_async(prompt: str) -> List[float]:
+    '''Using httpx async posts to the OLLAMA embedding service'''
     try:
         response = await httpx_client.post(
             OLLAMA_EMBEDDING_ENDPOINT, json={"model": OLLAMA_EMBEDDING_MODEL, "input": prompt}, timeout=10.0
