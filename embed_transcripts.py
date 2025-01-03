@@ -4,7 +4,8 @@ from pathlib import Path
 import re
 import json
 import tiktoken
-from ollama import Client
+# from ollama import Client
+from ollama import embed
 
 OLLAMA_EMBEDDING_ENDPOINT = os.getenv("OLLAMA_EMBEDDING_ENDPOINT")
 OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL")
@@ -28,7 +29,7 @@ class EMBED_TRANSCRIPTS:
         self.model = OLLAMA_EMBEDDING_MODEL
 
         self.segments = self.load_segments()
-        self.custom_client = Client(host=self.remote_host, timeout=10)
+        # self.custom_client = Client(host=self.remote_host, timeout=10)
 
     def load_master(self: "EMBED_TRANSCRIPTS") -> list:
         """Load segments from the JSON file."""
@@ -55,12 +56,14 @@ class EMBED_TRANSCRIPTS:
         return segments
 
     def get_text_embedding(self: "EMBED_TRANSCRIPTS", prompt: str) -> list:
+        '''Get the text embedding for a given prompt."""'''
         max_retry = 3
 
-        for i in range(max_retry):
+        for _i in range(max_retry):
             try:
-                embedding_result = self.custom_client.embeddings(model=self.model, prompt=prompt)
-                return embedding_result["embedding"]
+                embedding_result = embed(model='nomic-embed-text', input=prompt)
+                # embedding_result = self.custom_client.embeddings(model=self.model, prompt=prompt)
+                return embedding_result["embeddings"][0]
             except Exception as e:
                 print(f"Error: {e}")
         return []
@@ -72,8 +75,7 @@ class EMBED_TRANSCRIPTS:
         s = s.replace("..", ".")
         s = s.replace(". .", ".")
         s = s.replace("\n", "")
-        s = s.strip()
-        return s
+        return s.strip()
 
     def process_segment(self: "EMBED_TRANSCRIPTS", segment: dict) -> None:
         """Process the queue."""
