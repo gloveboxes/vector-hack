@@ -54,11 +54,11 @@ async def get_vector_data_async(prompt: str) -> List[float]:
     '''Using httpx async posts to the OLLAMA embedding service'''
     try:
         response = await httpx_client.post(
-            OLLAMA_EMBEDDING_ENDPOINT, json={"model": OLLAMA_EMBEDDING_MODEL, "input": prompt}, timeout=10.0
+            OLLAMA_EMBEDDING_ENDPOINT, json={"model": OLLAMA_EMBEDDING_MODEL, "prompt": prompt}, timeout=10.0
         )
         response.raise_for_status()
         embedding_result = response.json()
-        return embedding_result["embeddings"][0]
+        return embedding_result["embedding"]
     except httpx.TimeoutException as e:
         logging.error(f"Timeout error occurred: {e}")
         raise

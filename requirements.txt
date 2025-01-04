@@ -1,5 +1,6 @@
 asyncpg
 ollama
+httpx>=0.27.2, <1.0.0
 fastapi 
 uvicorn
 python-dotenv>=1.0.1, <2.0.0
@@ -14,3 +15,6 @@ google-api-python-client>=2.98.0,<3.0.0
 youtube-transcript-api>=0.6.1,<1.0.0
 rich>=13.5.2,<14.0.0
 tenacity>=8.2.3
+
+
+

@@ -4,7 +4,6 @@ from pathlib import Path
 import re
 import json
 import tiktoken
-# from ollama import Client
 from ollama import embed
 
 OLLAMA_EMBEDDING_ENDPOINT = os.getenv("OLLAMA_EMBEDDING_ENDPOINT")
@@ -61,8 +60,7 @@ class EMBED_TRANSCRIPTS:
 
         for _i in range(max_retry):
             try:
-                embedding_result = embed(model='nomic-embed-text', input=prompt)
-                # embedding_result = self.custom_client.embeddings(model=self.model, prompt=prompt)
+                embedding_result = embed(model=self.model, input=prompt)
                 return embedding_result["embeddings"][0]
             except Exception as e:
                 print(f"Error: {e}")
