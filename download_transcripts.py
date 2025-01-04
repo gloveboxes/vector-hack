@@ -24,7 +24,7 @@ GOOGLE_API_SERVICE_NAME = "youtube"
 GOOGLE_API_VERSION = "v3"
 
 MAX_RESULTS = 50
-PROCESSING_THREADS = 10
+PROCESSING_THREADS = 20
 
 formatter = WebVTTFormatter()
 q = queue.Queue()
