@@ -32,3 +32,5 @@ summarize_transcripts.summarize_text()
 
 loader = LOAD_TRANSCRIPTS(folder=TRANSCRIPT_FOLDER)
 loader.start_load()
+
+print("All done!")

@@ -11,7 +11,6 @@ import googleapiclient.discovery
 import googleapiclient.errors
 from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import WebVTTFormatter
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 logging.basicConfig(level=logging.INFO)
@@ -25,7 +24,7 @@ GOOGLE_API_SERVICE_NAME = "youtube"
 GOOGLE_API_VERSION = "v3"
 
 MAX_RESULTS = 50
-PROCESSING_THREADS = 40
+PROCESSING_THREADS = 10
 
 formatter = WebVTTFormatter()
 q = queue.Queue()
@@ -104,6 +103,7 @@ class DOWNLOAD_TRANSCRIPT:
             video = q.get()
 
             self.count.increment()
+            print(f"Processing video {self.count.value}")
 
             if self.get_transcript(video, self.count.value):
                 self.gen_metadata(video)
@@ -152,14 +152,19 @@ class DOWNLOAD_TRANSCRIPT:
 
         logger.info("Downloading transcriptions")
 
-        # Using ThreadPoolExecutor to manage threads
-        with ThreadPoolExecutor(max_workers=PROCESSING_THREADS) as executor:
-            futures = [executor.submit(self.process_queue) for _ in range(PROCESSING_THREADS)]
-            for future in as_completed(futures):
-                try:
-                    future.result()  # To catch any exceptions that occurred during processing
-                except Exception as e:
-                    logger.error("An error occurred during processing: %s", e)
+        threads = []
+        for _ in range(PROCESSING_THREADS):
+            thread = threading.Thread(target=self.process_queue)
+            thread.name = f"Thread-{_}"
+            thread.start()
+            threads.append(thread)
+
+        # wait for all threads to finish
+        for thread in threads:
+            thread.join()
+            print(f"Thread finished {thread.name}")
+   
 
         finish_time = time.time()
         logger.debug("Total time taken: %.2f seconds", finish_time - start_time)
+        print("Total time taken: %.2f seconds" % (finish_time - start_time))
